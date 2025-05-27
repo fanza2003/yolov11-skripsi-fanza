@@ -99,7 +99,6 @@ else:
             st.markdown("""
             Aplikasi ini mendeteksi penyakit apel menggunakan YOLOv11 mode utama:  
             **Object Detection** – Mendeteksi dan memberi bounding box pada penyakit pada buah apel.  
-             
             
             Silakan pilih mode yang Anda inginkan melalui menu di sidebar.
             """)
@@ -127,7 +126,7 @@ else:
 
             if input_method == "Upload Gambar":
                 source_img = st.file_uploader("Pilih gambar..", type=("jpg", "jpeg", "png"))
-                show_mobile_warning()  # <-- tampilkan peringatan mobile device di sini
+                show_mobile_warning()
                 
                 if source_img:
                     img = PIL.Image.open(source_img)
@@ -142,10 +141,6 @@ else:
                         with col2:
                             st.image(plotted, caption="Hasil Deteksi", use_column_width=True)
 
-                        if 'history' not in st.session_state:
-                            st.session_state.history = []
-                        st.session_state.history.append({"image": img, "result": plotted, "boxes": boxes})
-
                         try:
                             with open("penyakit_apple_info.json", "r", encoding="utf-8") as f:
                                 penyakit_info = json.load(f)
@@ -155,12 +150,26 @@ else:
                                 label = model.names[cls]
                                 detected_labels.add(label)
 
-                            st.markdown("### 🧠 Penjelasan Penyakit Terdeteksi")
+                            penjelasan_list = []
                             for label in detected_labels:
                                 if label in penyakit_info:
-                                    st.info(penyakit_info[label])
+                                    penjelasan_list.append(f"**{label}**: {penyakit_info[label]}")
                                 else:
-                                    st.warning(f"Tidak ada info untuk: **{label}**")
+                                    penjelasan_list.append(f"**{label}**: Info tidak tersedia")
+
+                            if 'history' not in st.session_state:
+                                st.session_state.history = []
+                            st.session_state.history.append({
+                                "image": img,
+                                "result": plotted,
+                                "boxes": boxes,
+                                "penjelasan": penjelasan_list
+                            })
+
+                            st.markdown("### 🧠 Penjelasan Penyakit Terdeteksi")
+                            for p in penjelasan_list:
+                                st.info(p)
+
                         except:
                             st.warning("File penyakit_apple_info.json tidak ditemukan")
 
@@ -178,10 +187,6 @@ else:
                     with col2:
                         st.image(plotted_cam, caption="Hasil Deteksi dari Kamera", use_column_width=True)
 
-                    if 'history' not in st.session_state:
-                        st.session_state.history = []
-                    st.session_state.history.append({"image": camera_img, "result": plotted_cam, "boxes": boxes_cam})
-
                     try:
                         with open("penyakit_apple_info.json", "r", encoding="utf-8") as f:
                             penyakit_info = json.load(f)
@@ -191,12 +196,26 @@ else:
                             label = model.names[cls]
                             detected_labels.add(label)
 
-                        st.markdown("### 🧠 Penjelasan Penyakit Terdeteksi")
+                        penjelasan_list = []
                         for label in detected_labels:
                             if label in penyakit_info:
-                                st.info(penyakit_info[label])
+                                penjelasan_list.append(f"**{label}**: {penyakit_info[label]}")
                             else:
-                                st.warning(f"Tidak ada info untuk: **{label}**")
+                                penjelasan_list.append(f"**{label}**: Info tidak tersedia")
+
+                        if 'history' not in st.session_state:
+                            st.session_state.history = []
+                        st.session_state.history.append({
+                            "image": camera_img,
+                            "result": plotted_cam,
+                            "boxes": boxes_cam,
+                            "penjelasan": penjelasan_list
+                        })
+
+                        st.markdown("### 🧠 Penjelasan Penyakit Terdeteksi")
+                        for p in penjelasan_list:
+                            st.info(p)
+
                     except:
                         st.warning("File penyakit_apple_info.json tidak ditemukan")
 
@@ -217,7 +236,7 @@ else:
 
             if input_method == "Upload Gambar":
                 source_img = st.file_uploader("Pilih gambar...", type=("jpg", "jpeg", "png", "bmp", "webp"))
-                show_mobile_warning()  # <-- tampilkan peringatan mobile device di sini
+                show_mobile_warning()
 
                 if source_img:
                     img = PIL.Image.open(source_img)
@@ -263,6 +282,10 @@ else:
                         with st.expander(f"Boxes Detail {idx + 1}"):
                             for box in rec['boxes']:
                                 st.write(box.data)
+                    if 'penjelasan' in rec:
+                        with st.expander(f"Penjelasan Penyakit {idx + 1}"):
+                            for p in rec['penjelasan']:
+                                st.markdown(p)
             else:
                 st.write("Belum ada riwayat deteksi/segmentasi.")
 
