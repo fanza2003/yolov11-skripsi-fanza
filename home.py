@@ -97,9 +97,9 @@ else:
         if selected_menu == "Home":
             st.header("Selamat datang di aplikasi YOLOv11 untuk deteksi penyakit apel!")
             st.markdown("""
-            Aplikasi ini mendeteksi penyakit apel menggunakan YOLOv11 dengan dua mode utama:  
-            1. **Object Detection** – Mendeteksi dan memberi bounding box pada penyakit pada buah apel.  
-            2. **Segmentation** – Menghasilkan segmentasi/pemisahan area penyakit pada gambar apel.  
+            Aplikasi ini mendeteksi penyakit apel menggunakan YOLOv11 mode utama:  
+            **Object Detection** – Mendeteksi dan memberi bounding box pada penyakit pada buah apel.  
+             
             
             Silakan pilih mode yang Anda inginkan melalui menu di sidebar.
             """)
