@@ -272,7 +272,7 @@ else:
                     st.session_state.history.append({"image": camera_img, "result": plotted_cam})
 
         elif selected_menu == "History":
-            st.header("Detection & Segmentation History")
+            st.header("Detection History")
             if st.session_state.get('history'):
                 for idx, rec in enumerate(st.session_state.history):
                     st.subheader(f"Record {idx + 1}")
@@ -287,7 +287,7 @@ else:
                             for p in rec['penjelasan']:
                                 st.markdown(p)
             else:
-                st.write("Belum ada riwayat deteksi/segmentasi.")
+                st.write("Belum ada riwayat deteksi.")
 
         # Dark mode toggle
         st.sidebar.markdown("---")
