@@ -50,6 +50,30 @@ if st.session_state['authentication_status'] != True:
             st.error("Username atau password salah")
 
 else:
+    def show_mobile_warning():
+        st.markdown("""
+            <style>
+            #mobile-warning {
+                color: red;
+                font-weight: bold;
+                margin-top: 8px;
+            }
+            </style>
+
+            <div id="mobile-warning" style="display:none;">
+                ⚠️ Pengguna HP wajib menggunakan mode desktop agar aplikasi berfungsi dengan baik.
+            </div>
+
+            <script>
+            function isMobile() {
+                return /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            }
+            if(isMobile()){
+                document.getElementById("mobile-warning").style.display = "block";
+            }
+            </script>
+        """, unsafe_allow_html=True)
+
     def main():
         if 'dark_mode' not in st.session_state:
             st.session_state.dark_mode = False
@@ -102,7 +126,9 @@ else:
             input_method = st.sidebar.radio("Pilih metode input gambar:", ["Upload Gambar", "Kamera Langsung"])
 
             if input_method == "Upload Gambar":
-                source_img = st.file_uploader("Pilih gambar...", type=("jpg","jpeg","png","bmp","webp"))
+                source_img = st.file_uploader("Pilih gambar..", type=("jpg", "jpeg", "png"))
+                show_mobile_warning()  # <-- tampilkan peringatan mobile device di sini
+                
                 if source_img:
                     img = PIL.Image.open(source_img)
                     if st.button("Detect Objects"):
@@ -190,7 +216,9 @@ else:
             input_method = st.sidebar.radio("Pilih metode input gambar:", ["Upload Gambar", "Kamera Langsung"])
 
             if input_method == "Upload Gambar":
-                source_img = st.file_uploader("Pilih gambar...", type=("jpg","jpeg","png","bmp","webp"))
+                source_img = st.file_uploader("Pilih gambar...", type=("jpg", "jpeg", "png", "bmp", "webp"))
+                show_mobile_warning()  # <-- tampilkan peringatan mobile device di sini
+
                 if source_img:
                     img = PIL.Image.open(source_img)
                     if st.button("Segment Image"):
@@ -228,11 +256,11 @@ else:
             st.header("Detection & Segmentation History")
             if st.session_state.get('history'):
                 for idx, rec in enumerate(st.session_state.history):
-                    st.subheader(f"Record {idx+1}")
-                    st.image(rec['image'], caption=f"Image {idx+1}", use_column_width=True)
-                    st.image(rec['result'], caption=f"Result {idx+1}", use_column_width=True)
+                    st.subheader(f"Record {idx + 1}")
+                    st.image(rec['image'], caption=f"Image {idx + 1}", use_column_width=True)
+                    st.image(rec['result'], caption=f"Result {idx + 1}", use_column_width=True)
                     if 'boxes' in rec:
-                        with st.expander(f"Boxes Detail {idx+1}"):
+                        with st.expander(f"Boxes Detail {idx + 1}"):
                             for box in rec['boxes']:
                                 st.write(box.data)
             else:
