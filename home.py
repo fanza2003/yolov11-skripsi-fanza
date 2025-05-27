@@ -45,28 +45,27 @@ if st.session_state['authentication_status'] != True:
             st.session_state['username'] = username
             st.session_state['name'] = name
             st.success("Berhasil login")
-            st.rerun()
+            st.experimental_rerun()
         else:
             st.error("Username atau password salah")
+
 else:
     def main():
         if 'dark_mode' not in st.session_state:
             st.session_state.dark_mode = False
 
-        st.title("Apple Detection🍎")
+        st.sidebar.title(f"Welcome, {st.session_state['name']}")
+        st.sidebar.header("🍎 Apel Indonesia")
 
         if st.sidebar.button("Logout"):
             st.session_state['authentication_status'] = None
             st.session_state['name'] = None
             st.session_state['username'] = None
-            st.rerun()
-
-        st.sidebar.title(f"Welcome, {st.session_state['name']}")
-        st.sidebar.header("🍎Apel Indonesia")
+            st.experimental_rerun()
 
         menu_options = {
             "Home": "🏠 Beranda",
-            "Detection": "🔍 Deteksi",
+            "Detection": "🔍 Object Detection",
             "History": "📜 Riwayat"
         }
         selected_menu = st.sidebar.radio("Select Menu", list(menu_options.keys()), format_func=lambda x: menu_options[x])
@@ -74,8 +73,13 @@ else:
         if selected_menu == "Home":
             st.header("Selamat datang di aplikasi YOLOv11 untuk deteksi penyakit apel!")
             st.markdown("""
-            Aplikasi ini mendeteksi penyakit apel menggunakan YOLOv11. Silakan menuju menu *Deteksi* untuk memilih gambar dan melakukan identifikasi otomatis.
+            Aplikasi ini mendeteksi penyakit apel menggunakan YOLOv11 dengan dua mode utama:  
+            1. **Object Detection** – Mendeteksi dan memberi bounding box pada penyakit pada buah apel.  
+            2. **Segmentation** – Menghasilkan segmentasi/pemisahan area penyakit pada gambar apel.  
+            
+            Silakan pilih mode yang Anda inginkan melalui menu di sidebar.
             """)
+
             col1, col2 = st.columns(2)
             with col1:
                 st.image("images/yak apple.jpg", caption="Overview Image", use_column_width=True)
@@ -92,35 +96,71 @@ else:
             except Exception as ex:
                 st.error(f"Unable to load model: {model_path}")
                 st.error(ex)
+                return
 
-            st.sidebar.header("Image Config")
-            source_img = st.sidebar.file_uploader("Choose an image...", type=("jpg","jpeg","png","bmp","webp"))
+            st.sidebar.header("Input Method")
+            input_method = st.sidebar.radio("Pilih metode input gambar:", ["Upload Gambar", "Kamera Langsung"])
 
-            col1, col2 = st.columns(2)
-            with col1:
+            if input_method == "Upload Gambar":
+                source_img = st.file_uploader("Pilih gambar...", type=("jpg","jpeg","png","bmp","webp"))
                 if source_img:
                     img = PIL.Image.open(source_img)
-                    st.image(img, caption="Uploaded Image", use_column_width=True)
-                else:
-                    img = PIL.Image.open(str(settings.DEFAULT_IMAGE))
-                    st.image(str(settings.DEFAULT_IMAGE), caption="Default Image", use_column_width=True)
+                    if st.button("Detect Objects"):
+                        res = model.predict(img, conf=confidence)
+                        boxes = res[0].boxes
+                        plotted = res[0].plot()[:, :, ::-1]
 
-            with col2:
-                if source_img and st.sidebar.button('Detect Objects'):
-                    res = model.predict(img, conf=confidence)
-                    boxes = res[0].boxes
-                    plotted = res[0].plot()[:, :, ::-1]
-                    st.image(plotted, caption="Detected Image", use_column_width=True)
+                        col1, col2 = st.columns(2)
+                        with col1:
+                            st.image(img, caption="Gambar yang diupload", use_column_width=True)
+                        with col2:
+                            st.image(plotted, caption="Hasil Deteksi", use_column_width=True)
+
+                        if 'history' not in st.session_state:
+                            st.session_state.history = []
+                        st.session_state.history.append({"image": img, "result": plotted, "boxes": boxes})
+
+                        try:
+                            with open("penyakit_apple_info.json", "r", encoding="utf-8") as f:
+                                penyakit_info = json.load(f)
+                            detected_labels = set()
+                            for box in boxes:
+                                cls = int(box.cls[0].item()) if hasattr(box.cls[0], 'item') else int(box.cls[0])
+                                label = model.names[cls]
+                                detected_labels.add(label)
+
+                            st.markdown("### 🧠 Penjelasan Penyakit Terdeteksi")
+                            for label in detected_labels:
+                                if label in penyakit_info:
+                                    st.info(penyakit_info[label])
+                                else:
+                                    st.warning(f"Tidak ada info untuk: **{label}**")
+                        except:
+                            st.warning("File penyakit_apple_info.json tidak ditemukan")
+
+            elif input_method == "Kamera Langsung":
+                camera_image = st.camera_input("Ambil Foto dengan Kamera")
+                if camera_image:
+                    camera_img = PIL.Image.open(camera_image)
+                    res_cam = model.predict(camera_img, conf=confidence)
+                    boxes_cam = res_cam[0].boxes
+                    plotted_cam = res_cam[0].plot()[:, :, ::-1]
+
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        st.image(camera_img, caption="Gambar dari Kamera", use_column_width=True)
+                    with col2:
+                        st.image(plotted_cam, caption="Hasil Deteksi dari Kamera", use_column_width=True)
 
                     if 'history' not in st.session_state:
                         st.session_state.history = []
-                    st.session_state.history.append({"image": img, "result": plotted, "boxes": boxes})
+                    st.session_state.history.append({"image": camera_img, "result": plotted_cam, "boxes": boxes_cam})
 
                     try:
                         with open("penyakit_apple_info.json", "r", encoding="utf-8") as f:
                             penyakit_info = json.load(f)
                         detected_labels = set()
-                        for box in boxes:
+                        for box in boxes_cam:
                             cls = int(box.cls[0].item()) if hasattr(box.cls[0], 'item') else int(box.cls[0])
                             label = model.names[cls]
                             detected_labels.add(label)
@@ -134,58 +174,75 @@ else:
                     except:
                         st.warning("File penyakit_apple_info.json tidak ditemukan")
 
-            st.markdown("---")
-            st.subheader("📸 Deteksi Langsung dari Kamera")
+        elif selected_menu == "Segmentation":
+            st.sidebar.header("ML Model Config")
+            confidence = float(st.sidebar.slider("Select Model Confidence", 25, 100, 40)) / 100
+            model_path = Path(settings.SEGMENTATION_MODEL)
 
-            camera_image = st.camera_input("Ambil Foto dengan Kamera")
-            if camera_image:
-                camera_img = PIL.Image.open(camera_image)
-                st.image(camera_img, caption="Gambar dari Kamera", use_column_width=True)
+            try:
+                model = helper.load_model(model_path)
+            except Exception as ex:
+                st.error(f"Unable to load segmentation model: {model_path}")
+                st.error(ex)
+                return
 
-                res_cam = model.predict(camera_img, conf=confidence)
-                boxes_cam = res_cam[0].boxes
-                plotted_cam = res_cam[0].plot()[:, :, ::-1]
-                st.image(plotted_cam, caption="Hasil Deteksi dari Kamera", use_column_width=True)
+            st.sidebar.header("Input Method")
+            input_method = st.sidebar.radio("Pilih metode input gambar:", ["Upload Gambar", "Kamera Langsung"])
 
-                if 'history' not in st.session_state:
-                    st.session_state.history = []
-                st.session_state.history.append({"image": camera_img, "result": plotted_cam, "boxes": boxes_cam})
+            if input_method == "Upload Gambar":
+                source_img = st.file_uploader("Pilih gambar...", type=("jpg","jpeg","png","bmp","webp"))
+                if source_img:
+                    img = PIL.Image.open(source_img)
+                    if st.button("Segment Image"):
+                        res = model.predict(img, conf=confidence)
+                        plotted = res[0].plot()[:, :, ::-1]
 
-                try:
-                    with open("penyakit_apple_info.json", "r", encoding="utf-8") as f:
-                        penyakit_info = json.load(f)
-                    detected_labels = set()
-                    for box in boxes_cam:
-                        cls = int(box.cls[0].item()) if hasattr(box.cls[0], 'item') else int(box.cls[0])
-                        label = model.names[cls]
-                        detected_labels.add(label)
+                        col1, col2 = st.columns(2)
+                        with col1:
+                            st.image(img, caption="Gambar yang diupload", use_column_width=True)
+                        with col2:
+                            st.image(plotted, caption="Hasil Segmentasi", use_column_width=True)
 
-                    st.markdown("### 🧠 Penjelasan Penyakit Terdeteksi")
-                    for label in detected_labels:
-                        if label in penyakit_info:
-                            st.info(penyakit_info[label])
-                        else:
-                            st.warning(f"Tidak ada info untuk: **{label}**")
-                except:
-                    st.warning("File penyakit_apple_info.json tidak ditemukan")
+                        if 'history' not in st.session_state:
+                            st.session_state.history = []
+                        st.session_state.history.append({"image": img, "result": plotted})
+
+            elif input_method == "Kamera Langsung":
+                camera_image = st.camera_input("Ambil Foto dengan Kamera")
+                if camera_image:
+                    camera_img = PIL.Image.open(camera_image)
+                    res_cam = model.predict(camera_img, conf=confidence)
+                    plotted_cam = res_cam[0].plot()[:, :, ::-1]
+
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        st.image(camera_img, caption="Gambar dari Kamera", use_column_width=True)
+                    with col2:
+                        st.image(plotted_cam, caption="Hasil Segmentasi dari Kamera", use_column_width=True)
+
+                    if 'history' not in st.session_state:
+                        st.session_state.history = []
+                    st.session_state.history.append({"image": camera_img, "result": plotted_cam})
 
         elif selected_menu == "History":
-            st.header("Detection History")
+            st.header("Detection & Segmentation History")
             if st.session_state.get('history'):
                 for idx, rec in enumerate(st.session_state.history):
-                    st.subheader(f"Detection {idx+1}")
+                    st.subheader(f"Record {idx+1}")
                     st.image(rec['image'], caption=f"Image {idx+1}", use_column_width=True)
                     st.image(rec['result'], caption=f"Result {idx+1}", use_column_width=True)
-                    with st.expander(f"Results {idx+1}"):
-                        for box in rec['boxes']:
-                            st.write(box.data)
+                    if 'boxes' in rec:
+                        with st.expander(f"Boxes Detail {idx+1}"):
+                            for box in rec['boxes']:
+                                st.write(box.data)
             else:
-                st.write("Belum ada riwayat deteksi.")
+                st.write("Belum ada riwayat deteksi/segmentasi.")
 
+        # Dark mode toggle
         st.sidebar.markdown("---")
         st.session_state.dark_mode = st.sidebar.checkbox('Dark Mode', value=st.session_state.dark_mode)
         if st.session_state.dark_mode:
-            st.sidebar.markdown("""<p style=\"color:white; font-size:12px;\">❗ Gunakan saat Streamlit dalam mode gelap ❗</p>""", unsafe_allow_html=True)
+            st.sidebar.markdown("""<p style="color:white; font-size:12px;">❗ Gunakan saat Streamlit dalam mode gelap ❗</p>""", unsafe_allow_html=True)
             st.markdown("""
             <style>
             [data-testid="stAppViewContainer"] {background-color:#1E1E1E; color:#FFF;}
@@ -193,7 +250,7 @@ else:
             [data-testid="stExpander"] {background-color:#2E2E2E;}
             </style>""", unsafe_allow_html=True)
         else:
-            st.sidebar.markdown("""<p style=\"color:black; font-size:12px;\">❗ Gunakan saat Streamlit dalam mode terang ❗</p>""", unsafe_allow_html=True)
+            st.sidebar.markdown("""<p style="color:black; font-size:12px;">❗ Gunakan saat Streamlit dalam mode terang ❗</p>""", unsafe_allow_html=True)
             st.markdown("""
             <style>
             [data-testid="stAppViewContainer"] {background-color:#ffffe0; color:#000;}
