@@ -110,8 +110,8 @@ else:
                 st.image("images/yak apple hasil.png", caption="Overview Deteksi", use_column_width=True)
 
         elif selected_menu == "Detection":
-            st.sidebar.header("ML Model Config")
-            confidence = float(st.sidebar.slider("Select Model Confidence", 25, 100, 40)) / 100
+            confidence = 0.4  # Fixed confidence, slider dihilangkan
+
             model_path = Path(settings.DETECTION_MODEL)
 
             try:
@@ -221,7 +221,8 @@ else:
 
         elif selected_menu == "Segmentation":
             st.sidebar.header("ML Model Config")
-            confidence = float(st.sidebar.slider("Select Model Confidence", 25, 100, 40)) / 100
+            confidence = 0.4  # Fixed confidence, slider dihilangkan
+
             model_path = Path(settings.SEGMENTATION_MODEL)
 
             try:
