@@ -36,8 +36,13 @@ if 'authentication_status' not in st.session_state:
 
 if st.session_state['authentication_status'] != True:
     st.header("Login 🍎")
+    
+    # Informasi login sementara
+    st.info("🔒 **Login Sementara**: Username = **admin**, Password = **123**")
+    
     username = st.text_input("Username")
     password = st.text_input("Password", type="password")
+    
     if st.button("Login"):
         name = verify_user(username, password)
         if name:
@@ -96,7 +101,7 @@ else:
 
         if selected_menu == "Home":
             st.header("Selamat datang di aplikasi YOLOv11 untuk deteksi penyakit apel!")
-            st.markdown("""
+            st.markdown(""" 
             Aplikasi ini mendeteksi penyakit apel menggunakan YOLOv11 mode utama:  
             **Object Detection** – Mendeteksi dan memberi bounding box pada penyakit pada buah apel.  
             
@@ -219,59 +224,6 @@ else:
                     except:
                         st.warning("File penyakit_apple_info.json tidak ditemukan")
 
-        elif selected_menu == "Segmentation":
-            st.sidebar.header("ML Model Config")
-            confidence = 0.4  # Fixed confidence, slider dihilangkan
-
-            model_path = Path(settings.SEGMENTATION_MODEL)
-
-            try:
-                model = helper.load_model(model_path)
-            except Exception as ex:
-                st.error(f"Unable to load segmentation model: {model_path}")
-                st.error(ex)
-                return
-
-            st.sidebar.header("Input Method")
-            input_method = st.sidebar.radio("Pilih metode input gambar:", ["Upload Gambar", "Kamera Langsung"])
-
-            if input_method == "Upload Gambar":
-                source_img = st.file_uploader("Pilih gambar...", type=("jpg", "jpeg", "png", "bmp", "webp"))
-                show_mobile_warning()
-
-                if source_img:
-                    img = PIL.Image.open(source_img)
-                    if st.button("Segment Image"):
-                        res = model.predict(img, conf=confidence)
-                        plotted = res[0].plot()[:, :, ::-1]
-
-                        col1, col2 = st.columns(2)
-                        with col1:
-                            st.image(img, caption="Gambar yang diupload", use_column_width=True)
-                        with col2:
-                            st.image(plotted, caption="Hasil Segmentasi", use_column_width=True)
-
-                        if 'history' not in st.session_state:
-                            st.session_state.history = []
-                        st.session_state.history.append({"image": img, "result": plotted})
-
-            elif input_method == "Kamera Langsung":
-                camera_image = st.camera_input("Ambil Foto dengan Kamera")
-                if camera_image:
-                    camera_img = PIL.Image.open(camera_image)
-                    res_cam = model.predict(camera_img, conf=confidence)
-                    plotted_cam = res_cam[0].plot()[:, :, ::-1]
-
-                    col1, col2 = st.columns(2)
-                    with col1:
-                        st.image(camera_img, caption="Gambar dari Kamera", use_column_width=True)
-                    with col2:
-                        st.image(plotted_cam, caption="Hasil Segmentasi dari Kamera", use_column_width=True)
-
-                    if 'history' not in st.session_state:
-                        st.session_state.history = []
-                    st.session_state.history.append({"image": camera_img, "result": plotted_cam})
-
         elif selected_menu == "History":
             st.header("Detection History")
             if st.session_state.get('history'):
@@ -287,6 +239,7 @@ else:
                         with st.expander(f"Penjelasan Penyakit {idx + 1}"):
                             for p in rec['penjelasan']:
                                 st.markdown(p)
+
             else:
                 st.write("Belum ada riwayat deteksi.")
 
@@ -295,7 +248,7 @@ else:
         st.session_state.dark_mode = st.sidebar.checkbox('Dark Mode', value=st.session_state.dark_mode)
         if st.session_state.dark_mode:
             st.sidebar.markdown("""<p style="color:white; font-size:12px;">❗ Gunakan saat Streamlit dalam mode gelap ❗</p>""", unsafe_allow_html=True)
-            st.markdown("""
+            st.markdown(""" 
             <style>
             [data-testid="stAppViewContainer"] {background-color:#1E1E1E; color:#FFF;}
             [data-testid="stSidebar"] {background-color:#333; color:#FFF;}
